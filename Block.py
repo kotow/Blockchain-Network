@@ -3,12 +3,12 @@ import hashlib
 
 
 class Block(object):
-    def __init__(self, index, transactions, difficulty, prev_block_hash):
+    def __init__(self, index, transactions, difficulty, prev_block_hash, mined_by):
         self.index = index
         self.transactions = transactions
         self.difficulty = difficulty
         self.prev_block_hash = prev_block_hash
-        self.mined_by = None
+        self.mined_by = mined_by
         self.block_data_hash = None
         self.nonce = None
         self.date_created = None

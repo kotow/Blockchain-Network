@@ -2,12 +2,14 @@ from flask import Flask, jsonify, request
 from Blockchain import Blockchain
 from Block import Block
 from Transaction import Transaction
-import json
+import json, pickle
 
 
 app = Flask(__name__)
-block = Block(0, [], 1, 0, None, 0, 1, 1, 0)
-chain = Blockchain(block, 3)
+block = Block(0, [], 1, 0, None)
+# chain = Blockchain(block, 3)
+# if pickle.load( open( "save.p", "rb" ) ):
+chain = pickle.load( open( "save.p", "rb" ) )
 
 
 @app.route('/chain', methods=['GET'])
@@ -22,6 +24,7 @@ def get_chain():
 
 @app.route('/transactions/send', methods=['POST'])
 def new_transaction():
+    pickle.dump(chain, open("save.p", "wb"))
     values = request.json
     print(values)
     tran = chain.add_new_transaction(values)
@@ -59,7 +62,7 @@ def sign_transaction():
 @app.route('/mining/get-mining-job/<address>', methods=['GET'])
 def get_mining_job(address):
     new_block = chain.get_mining_job(address)
-
+    pickle.dump(chain, open("save.p", "wb"))
     response_object = {
         "index": new_block.index,
         "transactionsIncluded": len(new_block.get_transactions()),
@@ -76,10 +79,18 @@ def get_mining_job(address):
 @app.route('/mining/submit-mined-block', methods=['POST'])
 def mine():
     values = json.loads(request.json)
+    pickle.dump(chain, open("save.p", "wb"))
     print('data', values)
     new_block_data_hash = chain.new_block(values['hash'], values['nonce'], values['date'], values['job_index'])
 
     return jsonify(new_block_data_hash)
+
+
+@app.route('/balances', methods=['GET'])
+def balances():
+    result = chain.get_balances()
+
+    return json.dumps(result)
 
 
 if __name__ == '__main__':

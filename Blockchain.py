@@ -97,5 +97,23 @@ class Blockchain(object):
         print(block.date_created)
         block.calculate_block_hash()
         print(block.block_hash, block_data_hash)
-        if block.block_data_hash == block.nonce:
-            self.extend_chain(block)
+        # if block.block_data_hash == block.nonce:
+        self.extend_chain(block)
+
+    def get_balances(self):
+        balances = {}
+        for block in self.blocks:
+            print('block')
+            for transaction in block.transactions:
+                print('transaction')
+                print('transaction from ', transaction.sender)
+                print('transaction to ', transaction.to)
+                if not transaction.sender in balances.keys():
+                    balances[transaction.sender] = 0
+                if not transaction.to in balances.keys():
+                    balances[transaction.to] = 0
+                balances[transaction.to] += transaction.value
+                balances[transaction.sender] -= transaction.value
+                balances[transaction.sender] -= transaction.fee
+
+        return balances
