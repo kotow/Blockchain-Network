@@ -2,7 +2,18 @@ from flask import Flask, jsonify, request
 from Blockchain import Blockchain
 from Block import Block
 from Transaction import Transaction
-import json, pickle
+import json, pickle, binascii, os, p2p_python
+
+
+class Node(object):
+    def __init__(self, server_host, server_port, blockchain):
+        self.nodeId = binascii.b2a_hex(os.urandom(15))
+        self.host = server_host
+        self.port = server_port
+        self.self_url = "http://{}:{}".format(self.host, self.port)
+        self.peers = {}
+        self.chain = blockchain
+        self.chainId = self.chain.blocks[0].blockHash
 
 
 app = Flask(__name__)
@@ -18,45 +29,51 @@ def get_chain():
         'chain': chain.get_blocks(),
         'length': len(chain.get_blocks())
     }
-    print(response)
+
     return json.dumps(response)
+
+
+@app.route('/blocks', methods=['GET'])
+def get_transactions():
+    return json.dumps(chain.get_blocks())
+
+
+@app.route('/blocks/<block_id>', methods=['GET'])
+def get_block(block_id):
+    current_block = None
+    for next_block in chain.blocks:
+        if int(next_block.index) == int(block_id):
+            current_block = next_block
+            break
+
+    return json.dumps(current_block.__repr__())
+
+
+@app.route('/transactions/pending', methods=['GET'])
+def get_pending_transactions():
+
+    return json.dumps(chain.get_pending_transactions())
+
+
+@app.route('/transactions/confirmed', methods=['GET'])
+def get_confirmed_transactions():
+
+    return json.dumps(chain.get_confirmed_transactions())
 
 
 @app.route('/transactions/send', methods=['POST'])
 def new_transaction():
     pickle.dump(chain, open("save.p", "wb"))
     values = request.json
-    print(values)
+    available_balance = chain.get_balance_for_address(values['from'])
+    print(available_balance, (int(values['value']) + int(values['fee'])))
+    if int(available_balance) < (int(values['value']) + int(values['fee'])):
+        return 'kurec', 400
     tran = chain.add_new_transaction(values)
     if isinstance(tran, Transaction):
         return hex(tran.transaction_data_hash)[2:], 201
     else:
-        return "kurec", 400
-
-
-@app.route('/transactions/sign', methods=['POST'])
-def sign_transaction():
-    values = request.json
-    print(values)
-    tran = Transaction(
-        values['from'],
-        values['to'],
-        values['value'],
-        values['fee'],
-        values['dateCreated'],
-        values['data'],
-        values['senderPubKey'],
-        None,
-        (values['senderSignature'][0], values['senderSignature'][1]),
-        None,
-        None
-    )
-    if isinstance(tran, Transaction):
-        tran.sign("7e4670ae70c98d24f3662c172dc510a085578b9ccc717e6c2f4e547edd960a34")
-        return tran.__repr__()
-        return "tran.sender_signature", 201
-    else:
-        return "kurec", 400
+        return "kurec2", 400
 
 
 @app.route('/mining/get-mining-job/<address>', methods=['GET'])
@@ -93,5 +110,24 @@ def balances():
     return json.dumps(result)
 
 
+@app.route('/address/<address>/balance', methods=['GET'])
+def balance_for_address(address):
+    result = chain.get_balance_for_address(address)
+
+    return json.dumps(result)
+
+
+@app.route('/address/<address>/transactions', methods=['GET'])
+def transactions_for_address(address):
+    result = chain.get_transactions_for_address(address)
+
+    return json.dumps(result)
+
+
+@app.route('/peers/connect', methods=['POST'])
+def connect_peer():
+    return ''
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='192.168.214.192', port=5000)

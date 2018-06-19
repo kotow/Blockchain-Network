@@ -57,7 +57,7 @@ class Blockchain(object):
 
         return blocks
 
-    def get_mining_job(self, miner_address)-> Block:
+    def get_mining_job(self, miner_address) -> Block:
         next_block_index = len(self.blocks)
 
         miner_reward_transaction = Transaction(
@@ -77,7 +77,7 @@ class Blockchain(object):
         miner_reward_transaction.calculate_data_hash()
         self.pending_transactions.append(miner_reward_transaction)
 
-        prev_block_hash = self.blocks[len(self.blocks)-1].block_hash
+        prev_block_hash = self.blocks[len(self.blocks) - 1].block_hash
         next_block = Block(
             next_block_index,
             self.pending_transactions,
@@ -94,20 +94,15 @@ class Blockchain(object):
         block = self.mining_jobs[job_index]
         block.nonce = nonce
         block.date_created = date
-        print(block.date_created)
         block.calculate_block_hash()
-        print(block.block_hash, block_data_hash)
-        # if block.block_data_hash == block.nonce:
-        self.extend_chain(block)
+        print(block.block_hash == block_data_hash)
+        if block.block_hash == block_data_hash:
+            self.extend_chain(block)
 
     def get_balances(self):
         balances = {}
         for block in self.blocks:
-            print('block')
             for transaction in block.transactions:
-                print('transaction')
-                print('transaction from ', transaction.sender)
-                print('transaction to ', transaction.to)
                 if not transaction.sender in balances.keys():
                     balances[transaction.sender] = 0
                 if not transaction.to in balances.keys():
@@ -117,3 +112,44 @@ class Blockchain(object):
                 balances[transaction.sender] -= transaction.fee
 
         return balances
+
+    def get_balance_for_address(self, address):
+        address_balance = 0
+        for block in self.blocks:
+            for transaction in block.transactions:
+                if transaction.sender == address:
+                    address_balance -= transaction.value
+                    address_balance -= transaction.fee
+                if transaction.to == address:
+                    address_balance += transaction.value
+
+        return address_balance
+
+    def get_pending_transactions(self):
+        response = []
+        for transaction in self.pending_transactions:
+            response.append(transaction.__repr__())
+        return response
+
+    def get_confirmed_transactions(self):
+        response = []
+        for block in self.blocks:
+            for transaction in block.transactions:
+                response.append(transaction.__repr__())
+        return response
+
+    def get_transactions_for_address(self, address):
+        address_transactions = []
+        for block in self.blocks:
+            for transaction in block.transactions:
+                if transaction.sender == address:
+                    address_transactions.append(transaction.__repr__())
+                if transaction.to == address:
+                    address_transactions.append(transaction.__repr__())
+        for transaction in self.pending_transactions:
+            if transaction.sender == address:
+                address_transactions.append(transaction.__repr__())
+            if transaction.to == address:
+                address_transactions.append(transaction.__repr__())
+
+        return address_transactions
