@@ -1,16 +1,19 @@
 import requests, datetime, hashlib, json, os, binascii
-from pycoin.ecdsa import generator_secp256k1
+from pycoin.ecdsa import generator_secp256k1, sign, verify
+
 
 seed = None
 chain_number = None
+enc = None
 
 # Type-I deterministic wallet 
 class Wallet(object):
     def __init__(self):
-        global seed, chain_number
+        global seed, chain_number, enc
+        enc = "utf8"
         # set seed, 12 word mnemonic phrase
         mnemonic_phrase = "bee tower cell magestic sea road blister sparrow cookie yellow wood flame"
-        seed = hashlib.sha256(mnemonic_phrase.encode("utf8")).hexdigest()
+        seed = hashlib.sha256(mnemonic_phrase.encode(enc)).hexdigest()
         # print("Your seed is", seed)
         chain_number = 0
     
@@ -20,10 +23,10 @@ class Wallet(object):
     
     def __get_next_private_key__(self) -> str:
         global seed, chain_number
-        chain_number_string = str(chain_number).encode("utf8")
+        chain_number_string = str(chain_number).encode(enc)
         chain_number += 1
         seed_string = seed
-        return hashlib.sha256(chain_number_string + seed_string.encode("utf8")).hexdigest()
+        return hashlib.sha256(chain_number_string + seed_string.encode(enc)).hexdigest()
     
     def __get_compressed_public_key_from_private_key__(self, private_key:int) -> int:
         private_key_int = self.__convert_string_to_int__(private_key, 16)
@@ -53,7 +56,7 @@ class Wallet(object):
     def __get_address_from_compressed_public_key__(self, compressed_public_key:str) -> str:
         if self.__defined__(compressed_public_key) == False: return False
         if isinstance(compressed_public_key, str) == False: return False
-        param = compressed_public_key.encode("utf8")
+        param = compressed_public_key.encode(enc)
         hashed_param = hashlib.new("ripemd160", param).hexdigest()
         # print("Your address:", hashed_param)
         return hashed_param
@@ -69,6 +72,48 @@ class Wallet(object):
         }, sort_keys = True).encode()
         return account_json
     
+    def sign_transaction(self, recipient_address:str, value:int, fee:int, private_key:str, data:str) -> object:
+        print(1)
+        if self.__defined__(recipient_address) == False: return False
+        if isinstance(recipient_address, str) == False: return False
+        if self.__defined__(value) == False: return False
+        if isinstance(value, int) == False: return False
+        if self.__defined__(fee) == False: return False
+        if isinstance(fee, int) == False: return False
+        if self.__defined__(private_key) == False: return False
+        if isinstance(private_key, str) == False: return False
+        # dada can be empty, it is optional
+        # if self.__defined__(data) == False: return False
+        if isinstance(data, str) == False: return False
+        private_key_int = self.__convert_string_to_int__(private_key, 16)
+        compressed_public_key = self.__get_compressed_public_key_from_private_key__(private_key)
+        address = self.__get_address_from_compressed_public_key__(compressed_public_key)
+        transaction = {
+            "from": address,
+            "to": recipient_address,
+            "value": value,
+            "fee": fee,
+            "dateCreated": datetime.datetime.now().isoformat(),
+            "data": data,
+            "senderPubKey": compressed_public_key
+        }
+        json_encoder = json.JSONEncoder(separators = (",", ":"))
+        transaction_json = json_encoder.encode(transaction)
+        transaction_json = transaction_json.encode(enc)
+        hashed_transaction_json = hashlib.sha256(transaction_json).digest()
+        hashed_transaction_int = int.from_bytes(hashed_transaction_json, byteorder = "big")
+        #print(hex(hashed_transaction_int)[2:])
+        transaction_signature = sign(
+            generator_secp256k1, 
+            private_key_int, 
+            hashed_transaction_int
+        )
+        #print(transaction_signature)
+        transaction["senderSignature"] = transaction_signature
+        return json.dumps(transaction, sort_keys = True).encode()
+    
 wlt = Wallet()
 act = wlt.create_new_account()
 print(act)
+tran = wlt.sign_transaction("f893a004fe1b498b3b2970efbb4b0738baa28028", 1000000000, 5000, "2798dc0b52771b16a3ea76b12ea966590d2070106d1d8fda46a3d93bd7f7cfd5", "")
+print(tran)
