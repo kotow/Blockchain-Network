@@ -32,7 +32,11 @@ class Wallet(object):
     
     def get_next_private_key(self):
         global seed, chain_number
-        private_key = hashlib.sha256(chain_number + seed)
+        chain_number_string = str(chain_number).encode("utf8")
+        chain_number += 1
+        seed_string = seed.decode()
+        return hashlib.sha256(chain_number_string + seed_string).hexdigest()
         
     
 wlt = Wallet()
+new_private_key = wlt.get_next_private_key
