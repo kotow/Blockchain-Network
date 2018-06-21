@@ -169,7 +169,7 @@ class Wallet(object):
         if isinstance(fee, int) == False: return False
         if self.__defined__(private_key) == False: return False
         if isinstance(private_key, str) == False: return False
-        # dada can be empty, it is optional
+        # data can be empty, it is optional
         # if self.__defined__(data) == False: return False
         if isinstance(data, str) == False: return False
         private_key_int = self.__convert_string_to_int__(private_key, 16)
@@ -198,6 +198,9 @@ class Wallet(object):
         #print(transaction_signature)
         transaction["senderSignature"] = transaction_signature
         return json.dumps(transaction, sort_keys = True).encode()
+    
+    def __get_chain_from_node__(self):
+        pass
 
 #debug test output, must be removed once finalized
 wlt = Wallet("softuni")
