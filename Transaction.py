@@ -36,10 +36,6 @@ class Transaction(object):
         self.transaction_data_hash = hashlib.sha256(tran_data_json.encode('utf8')).digest()
         self.transaction_data_hash = int.from_bytes(self.transaction_data_hash, byteorder="big")
 
-    def sign(self, private_ley):
-        self.sender_signature = sign(generator_secp256k1, int(private_ley, 16), self.transaction_data_hash)
-        self.sender_signature = [hex(self.sender_signature[0])[2:], hex(self.sender_signature[1])[2:]]
-
     def verify_signature(self):
         is_odd = (int(self.sender_pub_key[-1:]) % 2 == 0)
         pub_pair = public_pair_for_x(generator_secp256k1, int(self.sender_pub_key[:-1], 16), is_odd)

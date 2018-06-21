@@ -16,6 +16,10 @@ class Blockchain(object):
     def last_block(self):
         return self.blocks[-1]
 
+    #  TODO
+    def calculate_difficulty(self):
+        pass
+
     def extend_chain(self, new_block):
         if new_block.index != len(self.blocks):
             return "The submitted block was already mined by someone else"
@@ -189,4 +193,3 @@ class Blockchain(object):
         for block in self.blocks:
             difficulty += 16 ** block.difficulty
         return difficulty
-

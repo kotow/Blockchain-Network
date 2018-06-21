@@ -34,35 +34,35 @@ class Node(object):
             blocks = requests.get("http://" + peer_url + ":5000/blocks").json()
             self.chain.blocks = []
             for block in blocks:
-                sync_block_transactions = []
-                for transaction in block['transactions']:
-                    synced_tnx = Transaction(
-                        transaction['from'],
-                        transaction['to'],
-                        transaction['value'],
-                        transaction['fee'],
-                        transaction['dateCreated'],
-                        transaction['data'],
-                        transaction['transactionDataHash'],
-                        transaction['senderPubKey'],
-                        transaction['senderSignature']
+                if block.block_hash != block['block_hash']:
+                    sync_block_transactions = []
+                    for transaction in block['transactions']:
+                        synced_tnx = Transaction(
+                            transaction['from'],
+                            transaction['to'],
+                            transaction['value'],
+                            transaction['fee'],
+                            transaction['dateCreated'],
+                            transaction['data'],
+                            transaction['transactionDataHash'],
+                            transaction['senderPubKey'],
+                            transaction['senderSignature']
+                        )
+                        sync_block_transactions.append(synced_tnx)
+                    synced_clock = Block(
+                        block['index'],
+                        sync_block_transactions,
+                        block['difficulty'],
+                        block['prev_block_hash'],
+                        block['mined_by']
                     )
-                    sync_block_transactions.append(synced_tnx)
-                synced_clock = Block(
-                    block['index'],
-                    sync_block_transactions,
-                    block['difficulty'],
-                    block['prev_block_hash'],
-                    block['mined_by']
-                )
-                synced_clock.block_data_hash = block['block_data_hash']
-                synced_clock.nonce = block['nonce']
-                synced_clock.date_created = block['date_created']
-                synced_clock.block_hash = block['block_hash']
-                self.chain.blocks.append(synced_clock)
-            # self.chain.blocks = json.loads(blocks)
-            # self.chain.pending_transactions = []
-            # self.chain.mining_jobs = []
+                    synced_clock.block_data_hash = block['block_data_hash']
+                    synced_clock.nonce = block['nonce']
+                    synced_clock.date_created = block['date_created']
+                    synced_clock.block_hash = block['block_hash']
+                    self.chain.blocks.append(synced_clock)
+            # self.chain.pending_transactions = [] TODO: synchronize pending transactions
+            # self.chain.mining_jobs = [] TODO: sync mining jobs?
 
 
 app = Flask(__name__)
