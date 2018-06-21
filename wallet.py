@@ -5,27 +5,33 @@ from random import SystemRandom
 seed = None
 mnemonic_phrase = None
 password = None
+salt = None
 chain_number = None
 enc = None
 filename = "words.txt"
+accounts = None
 
 # Type-I deterministic wallet 
 class Wallet(object):
-    def __init__(self, password:str):
-        global seed, chain_number, enc, mnemonic_phrase
-        if self.__defined__(password) == False: return False
-        if isinstance(password, str) == False: return False
+    def __init__(self, pswd:str):
+        global seed, chain_number, enc, mnemonic_phrase, password, salt, accounts
+        if self.__defined__(pswd) == False: return False
+        if isinstance(pswd, str) == False: return False
+        accounts = {}
         enc = "utf8"
         # set seed, 12 word mnemonic phrase
         mnemonic_phrase = self.__get_twelve_words_as_list__()
-        seed = hashlib.sha256(mnemonic_phrase.encode(enc)).hexdigest()
+        password = pswd
+        salt = "shmirgel"
+        seed = hashlib.sha256(mnemonic_phrase.encode(enc) + salt.encode(enc) + pswd.encode(enc)).hexdigest()
         # print("Your seed is", seed)
         chain_number = 0
         
     def get_passphrase(self):
+        global mnemonic_phrase
         payload = {
-            "mnemonic_phrase": "",
-            "msg": "To restore the wallet you must provide the mnemonic_phrase"
+            "mnemonic_phrase": mnemonic_phrase,
+            "msg": "To restore the wallet you must provide the mnemonic_phrase and the password you used to generate the wallet. If you fail to provide both the coins will be lost!"
         }
         #print(transaction_signature)
         return json.dumps(payload, sort_keys = True).encode()
@@ -34,7 +40,7 @@ class Wallet(object):
         mnemonic_list = self.__get_mnemonic_wordlist_as_list__()
         cryptogen = SystemRandom()
         mnemonic_indexes = [cryptogen.randrange(2048) for i in range(12)]
-        print(type(mnemonic_list))
+        # print(type(mnemonic_list))
         return ' '.join([mnemonic_list[i] for i in mnemonic_indexes])
         
     def __get_mnemonic_wordlist_as_list__(self) -> list:
@@ -92,14 +98,17 @@ class Wallet(object):
         return hashed_param
     
     def create_new_account(self) -> object:
+        global accouts
         private_key = self.__get_next_private_key__()
         compressed_public_key = self.__get_compressed_public_key_from_private_key__(private_key)
         address = self.__get_address_from_compressed_public_key__(compressed_public_key)
-        account_json = json.dumps({
+        if compressed_public_key in accounts: return False#this should never happen
+        accounts[compressed_public_key] = {
             "private_key": private_key,
             "compressed_public_key": compressed_public_key,
             "address": address
-        }, sort_keys = True).encode()
+        }
+        account_json = json.dumps(accounts[compressed_public_key], sort_keys = True).encode()
         return account_json
     
     def sign_transaction(self, recipient_address:str, value:int, fee:int, private_key:str, data:str) -> object:
@@ -142,10 +151,11 @@ class Wallet(object):
         transaction["senderSignature"] = transaction_signature
         return json.dumps(transaction, sort_keys = True).encode()
     
-wlt = Wallet()
-wlt.__get_twelve_words_as_list__()
-#act = wlt.create_new_account()
-#print(act)
+wlt = Wallet("softuni")
+my_mnemonic_passphrase = wlt.get_passphrase()
+print(my_mnemonic_passphrase)
+act = wlt.create_new_account()
+print(act)
 #tran = wlt.sign_transaction("f893a004fe1b498b3b2970efbb4b0738baa28028", 1000000000, 5000, "2798dc0b52771b16a3ea76b12ea966590d2070106d1d8fda46a3d93bd7f7cfd5", "")
 #print(tran)
 
