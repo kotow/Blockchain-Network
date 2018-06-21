@@ -1,26 +1,53 @@
 from flask import Flask, jsonify, request
+from p2p_python.utils import setup_p2p_params
+from p2p_python.client import PeerClient
 from Blockchain import Blockchain
-from Block import Block
-from Transaction import Transaction
-import json, pickle, binascii, os, p2p_python
+import json, pickle, binascii, os, requests
 from GenesisBlock import *
 
 
 class Node(object):
-    def __init__(self, server_host, server_port, blockchain):
-        self.nodeId = binascii.b2a_hex(os.urandom(15))
+    def __init__(self, server_host, server_port, blockchain: Blockchain):
+        self.node_id = binascii.b2a_hex(os.urandom(15)).decode("utf-8")
         self.host = server_host
         self.port = server_port
         self.self_url = "http://{}:{}".format(self.host, self.port)
         self.peers = {}
         self.chain = blockchain
-        self.chainId = self.chain.blocks[0].blockHash
+        self.chain_id = self.chain.blocks[0].block_data_hash
+
+        setup_p2p_params(
+            network_ver=1000,
+            p2p_port=4001,
+            p2p_accept=True,
+            sub_dir='user2',
+            f_debug=True)
+        self.pc = PeerClient(f_local=True)
+        self.pc.start(f_stabilize=True)
 
 
 app = Flask(__name__)
 # chain = Blockchain(genesis_block, 3)
 # if pickle.load( open( "save.p", "rb" ) ):
 chain = pickle.load(open("save.p", "rb"))
+node = Node('192.168.214.192', '5000', chain)
+
+
+@app.route('/info', methods=['GET'])
+def info():
+    response = {
+        'about': 'KYRChain/0.1',
+        'nodeId': node.node_id,
+        'chainId': node.chain_id,
+        'nodeUrl': node.self_url,
+        'peers': len(node.peers),
+        'currentDifficulty': node.chain.current_difficulty,
+        'blocksCount': len(node.chain.blocks),
+        'cumulativeDifficulty': node.chain.calc_cumulative_difficulty(),
+        'confirmedTransactions': len(node.chain.get_confirmed_transactions()),
+        'pendingTransactions': len(node.chain.get_pending_transactions())
+    }
+    return json.dumps(response)
 
 
 @app.route('/chain', methods=['GET'])
@@ -126,9 +153,20 @@ def transactions_for_address(address):
     return json.dumps(result)
 
 
+@app.route('/peers', methods=['GET'])
+def get_peers():
+    return json.dumps(node.peers)
+
+
 @app.route('/peers/connect', methods=['POST'])
 def connect_peer():
-    return ''
+    values = request.json
+    peer_url = values['peerUrl']
+    node.pc.p2p.create_connection(host=peer_url, port=5000)
+    node_info = requests.get("http://" + values['peerUrl'] + ":5000/info")
+    print(node_info)
+
+    return 'kurec', 200
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 from Transaction import Transaction
 from Block import Block
-from GenesisBlock import *
+from GenesisBlock import null_address, null_signature, null_pub_key
 import datetime
 
 
@@ -183,3 +183,10 @@ class Blockchain(object):
                 address_transactions.append(transaction.__repr__())
 
         return address_transactions
+
+    def calc_cumulative_difficulty(self):
+        difficulty = 0
+        for block in self.blocks:
+            difficulty += 16 ** block.difficulty
+        return difficulty
+
