@@ -3,6 +3,7 @@ from Blockchain import Blockchain
 from Block import Block
 from Transaction import Transaction
 import json, pickle, binascii, os, p2p_python
+from GenesisBlock import *
 
 
 class Node(object):
@@ -17,10 +18,9 @@ class Node(object):
 
 
 app = Flask(__name__)
-block = Block(0, [], 1, 0, None)
-# chain = Blockchain(block, 3)
+# chain = Blockchain(genesis_block, 3)
 # if pickle.load( open( "save.p", "rb" ) ):
-chain = pickle.load( open( "save.p", "rb" ) )
+chain = pickle.load(open("save.p", "rb"))
 
 
 @app.route('/chain', methods=['GET'])
@@ -51,22 +51,24 @@ def get_block(block_id):
 
 @app.route('/transactions/pending', methods=['GET'])
 def get_pending_transactions():
-
     return json.dumps(chain.get_pending_transactions())
 
 
 @app.route('/transactions/confirmed', methods=['GET'])
 def get_confirmed_transactions():
-
     return json.dumps(chain.get_confirmed_transactions())
+
+
+@app.route('/transactions/<transaction_hash>', methods=['GET'])
+def get_confirmed_transaction_by_hash(transaction_hash):
+    return json.dumps(chain.get_transaction_by_hash(transaction_hash))
 
 
 @app.route('/transactions/send', methods=['POST'])
 def new_transaction():
     pickle.dump(chain, open("save.p", "wb"))
     values = request.json
-    available_balance = chain.get_balance_for_address(values['from'])
-    print(available_balance, (int(values['value']) + int(values['fee'])))
+    available_balance = chain.get_balance_for_address(values['from'])['safeBalance']
     if int(available_balance) < (int(values['value']) + int(values['fee'])):
         return 'kurec', 400
     tran = chain.add_new_transaction(values)

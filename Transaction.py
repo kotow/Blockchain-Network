@@ -6,7 +6,7 @@ from pycoin.ecdsa import *
 
 class Transaction(object):
     def __init__(self, sender, to, value, fee, date_created, data, sender_pub_key, transaction_data_hash=None,
-                 sender_signature=None, mined_in_block_index=None, transfer_successful=None):
+                 sender_signature=None, mined_in_block_index=None, transfer_successful=False):
         self.sender = sender
         self.to = to
         self.value = value
@@ -55,6 +55,7 @@ class Transaction(object):
             'fee': self.fee,
             'dateCreated': self.date_created,
             'data': self.data,
+            'transactionDataHash': self.transaction_data_hash,
             'senderPubKey': self.sender_pub_key,
             'senderSignature': self.sender_signature
         }

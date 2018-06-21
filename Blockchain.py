@@ -1,5 +1,6 @@
 from Transaction import Transaction
 from Block import Block
+from GenesisBlock import *
 import datetime
 
 
@@ -23,9 +24,11 @@ class Blockchain(object):
         if prev_block.block_hash != new_block.prev_block_hash:
             return "Incorrect prevBlockHash"
 
+        for transaction in prev_block.transactions:
+            transaction.mined_in_block_index = prev_block.index
         self.blocks.append(new_block)
         self.pending_transactions = []
-        # self.removePendingTransactions(new_block.transactions)
+
         return new_block
 
     def add_new_transaction(self, tran_data):
@@ -42,7 +45,7 @@ class Blockchain(object):
             None,
             None
         )
-
+        #  TODO:  check already in chain
         if not tran.verify_signature():
             return "Invalid signature: " + str(tran_data['senderSignature'][0] + tran_data['senderSignature'][1])
 
@@ -61,15 +64,15 @@ class Blockchain(object):
         next_block_index = len(self.blocks)
 
         miner_reward_transaction = Transaction(
-            0,
+            null_address,
             miner_address,
             12,
             0,
             datetime.datetime.now().isoformat(),
-            "data",
-            0,
+            "miner reward tnx",
+            null_pub_key,
             None,
-            0,
+            null_signature,
             next_block_index,
             True
         )
@@ -114,14 +117,28 @@ class Blockchain(object):
         return balances
 
     def get_balance_for_address(self, address):
-        address_balance = 0
+        address_balance = {
+            'safeBalance': 0,
+            'confirmedBalance': 0,
+            'pendingBalance': 0
+        }
         for block in self.blocks:
             for transaction in block.transactions:
                 if transaction.sender == address:
-                    address_balance -= transaction.value
-                    address_balance -= transaction.fee
+                    address_balance['safeBalance'] -= transaction.value
+                    address_balance['safeBalance'] -= transaction.fee
                 if transaction.to == address:
-                    address_balance += transaction.value
+                    if transaction.mined_in_block_index > (len(self.blocks) - 6):
+                        address_balance['safeBalance'] += transaction.value
+                    else:
+                        address_balance['confirmedBalance'] += transaction.value
+
+        for transaction in self.pending_transactions:
+            if transaction.sender == address:
+                address_balance['safeBalance'] -= transaction.value
+                address_balance['safeBalance'] -= transaction.fee
+            if transaction.to == address:
+                address_balance['pendingBalance'] += transaction.value
 
         return address_balance
 
@@ -137,6 +154,19 @@ class Blockchain(object):
             for transaction in block.transactions:
                 response.append(transaction.__repr__())
         return response
+
+    def get_transaction_by_hash(self, tran_hash):
+        confirmed_transactions = self.get_confirmed_transactions()
+        pending_transactions = self.get_pending_transactions()
+        all_transactions = confirmed_transactions + pending_transactions
+        print(all_transactions[0]['transactionDataHash'])
+        print(tran_hash)
+        print(type(all_transactions[0]['transactionDataHash']))
+        print(type(tran_hash))
+        tran = next((x for x in all_transactions if x['transactionDataHash'] == int(tran_hash)), None)
+        if tran:
+            return tran
+        return None
 
     def get_transactions_for_address(self, address):
         address_transactions = []
