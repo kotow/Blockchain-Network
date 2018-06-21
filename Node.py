@@ -25,6 +25,15 @@ class Node(object):
         self.pc = PeerClient(f_local=True)
         self.pc.start(f_stabilize=True)
 
+    def sync_chain(self, peer_chain, peer_url):
+        this_chain_difficulty = self.chain.calc_cumulative_difficulty()
+        peer_chain_difficulty = peer_chain.cumulativeDifficulty
+        if peer_chain_difficulty > this_chain_difficulty:
+            blocks = requests.get("http://" + peer_url + ":5000/blocks")
+            self.chain.blocks = blocks
+            self.chain.pending_transactions = []
+            self.chain.mining_jobs = []
+
 
 app = Flask(__name__)
 # chain = Blockchain(genesis_block, 3)
@@ -162,9 +171,10 @@ def get_peers():
 def connect_peer():
     values = request.json
     peer_url = values['peerUrl']
-    node.pc.p2p.create_connection(host=peer_url, port=5000)
-    node_info = requests.get("http://" + values['peerUrl'] + ":5000/info")
+    # node.pc.p2p.create_connection(host=peer_url, port=5000)
+    node_info = requests.get("http://" + peer_url + ":5000/info").json()
     print(node_info)
+    node.sync_chain(node_info, peer_url)
 
     return 'kurec', 200
 
