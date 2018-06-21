@@ -8,7 +8,8 @@ password = None
 salt = None
 chain_number = None
 enc = None
-filename = "words.txt"
+filename_words = "words.txt"
+filename_salt = "salt.txt"
 accounts = None
 
 # Type-I deterministic wallet 
@@ -22,7 +23,7 @@ class Wallet(object):
         # set seed, 12 word mnemonic phrase
         mnemonic_phrase = self.__get_twelve_words_as_list__()
         password = pswd
-        salt = "shmirgel"
+        salt = self.__get_salt__()
         seed = hashlib.sha256(mnemonic_phrase.encode(enc) + salt.encode(enc) + pswd.encode(enc)).hexdigest()
         # print("Your seed is", seed)
         chain_number = 0
@@ -35,6 +36,41 @@ class Wallet(object):
         }
         #print(transaction_signature)
         return json.dumps(payload, sort_keys = True).encode()
+    
+    def restore_wallet(self, mnemonic_passphrase:str, pswd:str) -> object:
+        if self.__defined__(mnemonic_passphrase) == False: return False
+        if isinstance(mnemonic_passphrase, str) == False: return False
+        provided_mnemonic_passphrase = mnemonic_passphrase.split(" ")
+        if len(provided_mnemonic_passphrase) != 12: return False
+        if self.__defined__(pswd) == False: return False
+        if isinstance(pswd, str) == False: return False
+        payload = {}
+        if self.__attempt_wallet_recovery__(mnemonic_passphrase, pswd): 
+            payload = {
+                "msg": "Your wallet has been restored. Please call create_new_account() as many times as you need to create the lost accounts.",
+                "success": "True"
+            }
+        else:
+            payload = {
+                "msg": "Unable to restore wallet! Did you provide the 12 word mnemonic passphrase and the password you used to create the wallet?",
+                "success": "Falses"
+            }
+        return json.dumps(payload, sort_keys = True).encode()
+    
+    def __attempt_wallet_recovery__(self, mnemonic_passphrase:str, pswd:str) -> bool:
+        global seed, chain_number, enc, mnemonic_phrase, password, salt, accounts
+        if self.__defined__(mnemonic_passphrase) == False: return False
+        if isinstance(mnemonic_passphrase, str) == False: return False
+        if self.__defined__(pswd) == False: return False
+        if isinstance(pswd, str) == False: return False
+        accounts = {}
+        enc = "utf8"
+        password = pswd
+        salt = self.__get_salt__()
+        seed = hashlib.sha256(mnemonic_passphrase.encode(enc) + salt.encode(enc) + pswd.encode(enc)).hexdigest()
+        # print("Your seed is", seed)
+        chain_number = 0
+        return True
         
     def __get_twelve_words_as_list__(self) -> list:
         mnemonic_list = self.__get_mnemonic_wordlist_as_list__()
@@ -42,9 +78,14 @@ class Wallet(object):
         mnemonic_indexes = [cryptogen.randrange(2048) for i in range(12)]
         # print(type(mnemonic_list))
         return ' '.join([mnemonic_list[i] for i in mnemonic_indexes])
+    
+    def __get_salt__(self):
+        with open(filename_salt) as file:
+            slt = file.read()
+        return slt
         
     def __get_mnemonic_wordlist_as_list__(self) -> list:
-        with open(filename) as file:
+        with open(filename_words) as file:
             lines = file.read().splitlines()
         return lines
         
@@ -112,7 +153,6 @@ class Wallet(object):
         return account_json
     
     def sign_transaction(self, recipient_address:str, value:int, fee:int, private_key:str, data:str) -> object:
-        print(1)
         if self.__defined__(recipient_address) == False: return False
         if isinstance(recipient_address, str) == False: return False
         if self.__defined__(value) == False: return False
@@ -154,8 +194,12 @@ class Wallet(object):
 wlt = Wallet("softuni")
 my_mnemonic_passphrase = wlt.get_passphrase()
 print(my_mnemonic_passphrase)
+loaded_json = json.loads(my_mnemonic_passphrase.decode())
+generated_passphrase = loaded_json["mnemonic_phrase"]
 act = wlt.create_new_account()
-print(act)
+print("Fresh first key:", act)
 #tran = wlt.sign_transaction("f893a004fe1b498b3b2970efbb4b0738baa28028", 1000000000, 5000, "2798dc0b52771b16a3ea76b12ea966590d2070106d1d8fda46a3d93bd7f7cfd5", "")
 #print(tran)
-
+print(wlt.restore_wallet(generated_passphrase, "softuni"))
+act = wlt.create_new_account()
+print("Restored first key:", act)
