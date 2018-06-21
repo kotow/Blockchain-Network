@@ -1,21 +1,51 @@
 import requests, datetime, hashlib, json, os, binascii
 from pycoin.ecdsa import generator_secp256k1, sign, verify
-
+from random import SystemRandom
 
 seed = None
+mnemonic_phrase = None
+password = None
 chain_number = None
 enc = None
+filename = "words.txt"
 
 # Type-I deterministic wallet 
 class Wallet(object):
-    def __init__(self):
-        global seed, chain_number, enc
+    def __init__(self, password:str):
+        global seed, chain_number, enc, mnemonic_phrase
+        if self.__defined__(password) == False: return False
+        if isinstance(password, str) == False: return False
         enc = "utf8"
         # set seed, 12 word mnemonic phrase
-        mnemonic_phrase = "bee tower cell magestic sea road blister sparrow cookie yellow wood flame"
+        mnemonic_phrase = self.__get_twelve_words_as_list__()
         seed = hashlib.sha256(mnemonic_phrase.encode(enc)).hexdigest()
         # print("Your seed is", seed)
         chain_number = 0
+        
+    def get_passphrase(self):
+        payload = {
+            "mnemonic_phrase": "",
+            "msg": "To restore the wallet you must provide the mnemonic_phrase"
+        }
+        #print(transaction_signature)
+        return json.dumps(payload, sort_keys = True).encode()
+        
+    def __get_twelve_words_as_list__(self) -> list:
+        mnemonic_list = self.__get_mnemonic_wordlist_as_list__()
+        cryptogen = SystemRandom()
+        mnemonic_indexes = [cryptogen.randrange(2048) for i in range(12)]
+        print(type(mnemonic_list))
+        return ' '.join([mnemonic_list[i] for i in mnemonic_indexes])
+        
+    def __get_mnemonic_wordlist_as_list__(self) -> list:
+        with open(filename) as file:
+            lines = file.read().splitlines()
+        return lines
+        
+    def __get_random_string__(self, length) -> str:
+        if self.__defined__(length) == False: return False
+        if isinstance(length, int) == False: return False
+        return binascii.hexlify(os.urandom(length))
     
     def __defined__(self, obj: object) -> bool:
         if obj == None or obj == "": return False
@@ -113,7 +143,9 @@ class Wallet(object):
         return json.dumps(transaction, sort_keys = True).encode()
     
 wlt = Wallet()
-act = wlt.create_new_account()
-print(act)
-tran = wlt.sign_transaction("f893a004fe1b498b3b2970efbb4b0738baa28028", 1000000000, 5000, "2798dc0b52771b16a3ea76b12ea966590d2070106d1d8fda46a3d93bd7f7cfd5", "")
-print(tran)
+wlt.__get_twelve_words_as_list__()
+#act = wlt.create_new_account()
+#print(act)
+#tran = wlt.sign_transaction("f893a004fe1b498b3b2970efbb4b0738baa28028", 1000000000, 5000, "2798dc0b52771b16a3ea76b12ea966590d2070106d1d8fda46a3d93bd7f7cfd5", "")
+#print(tran)
+
