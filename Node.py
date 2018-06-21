@@ -26,13 +26,43 @@ class Node(object):
         self.pc.start(f_stabilize=True)
 
     def sync_chain(self, peer_chain, peer_url):
+        #  TODO:  validate all blocks and transactions
         this_chain_difficulty = self.chain.calc_cumulative_difficulty()
-        peer_chain_difficulty = peer_chain.cumulativeDifficulty
+        print(peer_chain)
+        peer_chain_difficulty = peer_chain['cumulativeDifficulty']
         if peer_chain_difficulty > this_chain_difficulty:
-            blocks = requests.get("http://" + peer_url + ":5000/blocks")
-            self.chain.blocks = blocks
-            self.chain.pending_transactions = []
-            self.chain.mining_jobs = []
+            blocks = requests.get("http://" + peer_url + ":5000/blocks").json()
+            self.chain.blocks = []
+            for block in blocks:
+                sync_block_transactions = []
+                for transaction in block['transactions']:
+                    synced_tnx = Transaction(
+                        transaction['from'],
+                        transaction['to'],
+                        transaction['value'],
+                        transaction['fee'],
+                        transaction['dateCreated'],
+                        transaction['data'],
+                        transaction['transactionDataHash'],
+                        transaction['senderPubKey'],
+                        transaction['senderSignature']
+                    )
+                    sync_block_transactions.append(synced_tnx)
+                synced_clock = Block(
+                    block['index'],
+                    sync_block_transactions,
+                    block['difficulty'],
+                    block['prev_block_hash'],
+                    block['mined_by']
+                )
+                synced_clock.block_data_hash = block['block_data_hash']
+                synced_clock.nonce = block['nonce']
+                synced_clock.date_created = block['date_created']
+                synced_clock.block_hash = block['block_hash']
+                self.chain.blocks.append(synced_clock)
+            # self.chain.blocks = json.loads(blocks)
+            # self.chain.pending_transactions = []
+            # self.chain.mining_jobs = []
 
 
 app = Flask(__name__)
@@ -173,7 +203,6 @@ def connect_peer():
     peer_url = values['peerUrl']
     # node.pc.p2p.create_connection(host=peer_url, port=5000)
     node_info = requests.get("http://" + peer_url + ":5000/info").json()
-    print(node_info)
     node.sync_chain(node_info, peer_url)
 
     return 'kurec', 200
