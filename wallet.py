@@ -57,6 +57,14 @@ class Wallet(object):
             }
         return json.dumps(payload, sort_keys = True).encode()
     
+    # returns only confirmed balance
+    def get_account_balance(self, address:str) -> object:
+        pass
+    
+    # returns detailed balance with confirmed and pending transactions
+    def get_detailed_account_balance(self, address:str) -> object:
+        pass
+    
     def __attempt_wallet_recovery__(self, mnemonic_passphrase:str, pswd:str) -> bool:
         global seed, chain_number, enc, mnemonic_phrase, password, salt, accounts
         if self.__defined__(mnemonic_passphrase) == False: return False
@@ -190,7 +198,8 @@ class Wallet(object):
         #print(transaction_signature)
         transaction["senderSignature"] = transaction_signature
         return json.dumps(transaction, sort_keys = True).encode()
-    
+
+#debug test output, must be removed once finalized
 wlt = Wallet("softuni")
 my_mnemonic_passphrase = wlt.get_passphrase()
 print(my_mnemonic_passphrase)
