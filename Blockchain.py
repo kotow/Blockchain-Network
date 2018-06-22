@@ -132,10 +132,10 @@ class Blockchain(object):
                     address_balance['safeBalance'] -= transaction.value
                     address_balance['safeBalance'] -= transaction.fee
                 if transaction.to == address:
-                    if transaction.mined_in_block_index > (len(self.blocks) - 6):
-                        address_balance['safeBalance'] += transaction.value
-                    else:
-                        address_balance['confirmedBalance'] += transaction.value
+                    # if transaction.mined_in_block_index > (len(self.blocks) - 6):
+                    #     address_balance['safeBalance'] += transaction.value
+                    # else:
+                    address_balance['safeBalance'] += transaction.value
 
         for transaction in self.pending_transactions:
             if transaction.sender == address:
