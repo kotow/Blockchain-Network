@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request, json
+import requests
 #from wallet import Wallet
 from datetime import datetime, timedelta
 from crypto import sign_transaction, verify_transaction
@@ -35,8 +36,8 @@ def request_coins(address):
         history[address] = datetime.now()
     if seed_address:
         transaction = sign_tx(address)
-        print(transaction)
-        verify_transaction(transaction)
+        # print(transaction)
+        payload["POST to node"] = post_transaction(transaction)
     
     return json.dumps(payload, sort_keys = True).encode()
 
@@ -44,6 +45,12 @@ def sign_tx(address:str):
     if defined(address) == False: return False
     if isinstance(address, str) == False: return False
     return sign_transaction(address, 1000000000, 5000, private_key, "seeded by faucet")
+
+def post_transaction(transaction:object) -> int:
+#    print(transaction)
+#    print(transaction.decode())
+    response = requests.post("http://192.168.214.192/transactions/send", data = json.dumps(transaction.decode()))
+    return response.status_code
     
 if __name__ == '__main__':
     app.run(host = '127.0.0.1', port = 7777)
