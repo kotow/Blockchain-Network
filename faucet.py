@@ -1,11 +1,14 @@
 from flask import Flask, jsonify, request, json
+import requests
 #from wallet import Wallet
 from datetime import datetime, timedelta
+from crypto import sign_transaction, verify_transaction
+from helpers import defined
 app = Flask(__name__)
 
-address = "ff9996f7924323baa4b54dfcfed49819254286d9"
-compressed_public_key = "8836410c68dc0fb116b35799111974ec0c793cb397a5a51af49f7d95c61127ce0"
-private_key = "ee544e7cde8316db3d667d721f2ab43c77092066d7243aca14ee9c239c516ad5"
+address = "8c3c1f0c6c09dc3030d87fdfc2f70e43e6a10afc"
+compressed_public_key = "e504d06f02b085438689dc63d68d40b5b8261268abe76cfa665d06eb5f9e016c0"
+private_key = "f74b3e7d8e550b0a3697a585963a3bd0076aa009adefdad753c74bc7e329e205"
 history = {}
 hours_delta = 1
 
@@ -17,22 +20,37 @@ def request_coins(address):
         "msg": "",
         "success": ""
     }
+    seed_address = True
     if address in history:
         if history[address] + timedelta(hours = hours_delta) < current_time:
-#            print(history[address])
-#            print(history[address] + timedelta(hours = hours_delta))
-#            print(history[address] + timedelta(hours = hours_delta) > current_time)
-            payload["msg"] = "ok, sending you one additional coin"
+            payload["msg"] = "One coin was sent to the following address: " + address
             payload["success"] = True
         else:
-            payload["msg"] = "no, please wait"
+            seed_address = False
+            payload["msg"] = "You have already received one coin within the last hour. Please wait."
             payload["success"] = False
             
     else:
-        payload["msg"] = "ok, sending you one initial coin"
+        payload["msg"] = "One coin was sent to the following address: " + address
         payload["success"] = True
         history[address] = datetime.now()
+    if seed_address:
+        transaction = sign_tx(address)
+        # print(transaction)
+        payload["POST to node"] = post_transaction(transaction)
+    
     return json.dumps(payload, sort_keys = True).encode()
+
+def sign_tx(address:str):
+    if defined(address) == False: return False
+    if isinstance(address, str) == False: return False
+    return sign_transaction(address, 1000000000, 5000, private_key, "seeded by faucet")
+
+def post_transaction(transaction:object) -> int:
+#    print(transaction)
+#    print(transaction.decode())
+    response = requests.post("http://192.168.214.192/transactions/send", data = json.dumps(transaction.decode()))
+    return response.status_code
     
 if __name__ == '__main__':
     app.run(host = '127.0.0.1', port = 7777)
