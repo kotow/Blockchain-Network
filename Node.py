@@ -1,6 +1,4 @@
 from flask import Flask, jsonify, request
-from p2p_python.utils import setup_p2p_params
-from p2p_python.client import PeerClient
 from Blockchain import Blockchain
 import json, pickle, binascii, os, requests
 from GenesisBlock import *
@@ -16,15 +14,6 @@ class Node(object):
         self.chain = blockchain
         self.chain_id = self.chain.blocks[0].block_data_hash
 
-        setup_p2p_params(
-            network_ver=1000,
-            p2p_port=4001,
-            p2p_accept=True,
-            sub_dir='user2',
-            f_debug=True)
-        self.pc = PeerClient(f_local=True)
-        self.pc.start(f_stabilize=True)
-
     def notify_peers_about_new_block(self):
         notification = {
             'blocksCount': self.chain.blocks.length,
@@ -32,20 +21,19 @@ class Node(object):
             'nodeUrl': node.self_url
         }
         for node_id, node_url in self.peers:
-            requests.post("http://" + node_url + "/blocks", jsonify(notification))
+            requests.post(node_url + "/blocks", jsonify(notification))
 
     def notify_peers_about_new_transcation(self, transaction):
         for node_id, node_url in self.peers:
-            requests.post("http://" + node_url + "/transactions/send", jsonify(transaction))
+            requests.post(node_url + "/transactions/send", jsonify(transaction))
 
     def sync_chain(self, peer_chain):
         print(peer_chain)
         #  TODO:  validate all blocks and transactions
         this_chain_difficulty = self.chain.calc_cumulative_difficulty()
-        print(peer_chain)
         peer_chain_difficulty = peer_chain['cumulativeDifficulty']
         if peer_chain_difficulty > this_chain_difficulty:
-            blocks = requests.get("http://" + peer_chain['peerUrl'] + "/blocks").json()
+            blocks = requests.get(peer_chain['nodeUrl'] + "/blocks").json()
             self.chain.blocks = []
             for block in blocks:
                 if block.block_hash != block['block_hash']:
@@ -80,10 +68,10 @@ class Node(object):
 
 
 app = Flask(__name__)
-# chain = Blockchain(genesis_block, 3)
+chain = Blockchain(genesis_block, 3)
 # if pickle.load( open( "save.p", "rb" ) ):
-chain = pickle.load(open("save.p", "rb"))
-node = Node('192.168.214.192', '5000', chain)
+# chain = pickle.load(open("save.p", "rb"))
+node = Node('0.0.0.0', '5000', chain)
 
 
 @app.route('/info', methods=['GET'])
@@ -218,9 +206,9 @@ def connect_peer():
     values = request.json
     peer_url = values['peerUrl']
     # node.pc.p2p.create_connection(host=peer_url, port=5000)
-    node_info = requests.get("http://" + peer_url + "/info").json()
+    node_info = requests.get(peer_url + "/info").json()
     node.sync_chain(node_info)
-    node.peers.update({values['nodeId']: values['peerUrl']})
+    node.peers.update({node_info['nodeId']: node_info['nodeUrl']})
 
     return 'kurec', 200
 
@@ -231,4 +219,4 @@ def sync_new_block():
     return "Thank you for the notification.", 200
 
 if __name__ == '__main__':
-    app.run(host='192.168.214.192', port=5000)
+    app.run(host='0.0.0.0', port=5000)
