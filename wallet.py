@@ -136,7 +136,7 @@ class Wallet(object):
         return account_json
     
     def __get_chain_from_node__(self):
-        response = requests.get("http://192.168.214.192/chain")
+        response = requests.get("http://0.0.0.0:5001/chain")
         response_json = response.json()
         return response_json
     

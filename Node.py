@@ -68,10 +68,10 @@ class Node(object):
 
 
 app = Flask(__name__)
-chain = Blockchain(genesis_block, 3)
+# chain = Blockchain(genesis_block, 3)
 # if pickle.load( open( "save.p", "rb" ) ):
-# chain = pickle.load(open("save.p", "rb"))
-node = Node('0.0.0.0', '5000', chain)
+chain = pickle.load(open("save.p", "rb"))
+node = Node('0.0.0.0', '5001', chain)
 
 
 @app.route('/info', methods=['GET'])
@@ -136,8 +136,8 @@ def get_confirmed_transaction_by_hash(transaction_hash):
 def new_transaction():
     pickle.dump(chain, open("save.p", "wb"))
     values = request.json
-    available_balance = chain.get_balance_for_address(values['from'])['safeBalance']
-    if int(available_balance) < (int(values['value']) + int(values['fee'])):
+    available_balance = chain.get_balance_for_address(values['from'])
+    if int(available_balance.safeBalance) < (int(values['value']) + int(values['fee'])):
         return 'kurec', 400
     tran = chain.add_new_transaction(values)
     if isinstance(tran, Transaction):
@@ -219,4 +219,4 @@ def sync_new_block():
     return "Thank you for the notification.", 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5001)
