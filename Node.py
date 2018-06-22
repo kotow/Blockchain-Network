@@ -25,13 +25,27 @@ class Node(object):
         self.pc = PeerClient(f_local=True)
         self.pc.start(f_stabilize=True)
 
-    def sync_chain(self, peer_chain, peer_url):
+    def notify_peers_about_new_block(self):
+        notification = {
+            'blocksCount': self.chain.blocks.length,
+            'cumulativeDifficulty': self.chain.calc_cumulative_difficulty(),
+            'nodeUrl': node.self_url
+        }
+        for node_id, node_url in self.peers:
+            requests.post("http://" + node_url + "/blocks", jsonify(notification))
+
+    def notify_peers_about_new_transcation(self, transaction):
+        for node_id, node_url in self.peers:
+            requests.post("http://" + node_url + "/transactions/send", jsonify(transaction))
+
+    def sync_chain(self, peer_chain):
+        print(peer_chain)
         #  TODO:  validate all blocks and transactions
         this_chain_difficulty = self.chain.calc_cumulative_difficulty()
         print(peer_chain)
         peer_chain_difficulty = peer_chain['cumulativeDifficulty']
         if peer_chain_difficulty > this_chain_difficulty:
-            blocks = requests.get("http://" + peer_url + ":5000/blocks").json()
+            blocks = requests.get("http://" + peer_chain['peerUrl'] + "/blocks").json()
             self.chain.blocks = []
             for block in blocks:
                 if block.block_hash != block['block_hash']:
@@ -139,6 +153,7 @@ def new_transaction():
         return 'kurec', 400
     tran = chain.add_new_transaction(values)
     if isinstance(tran, Transaction):
+        node.notify_peers_about_new_transcation(values)
         return hex(tran.transaction_data_hash)[2:], 201
     else:
         return "kurec2", 400
@@ -167,6 +182,7 @@ def mine():
     pickle.dump(chain, open("save.p", "wb"))
     print('data', values)
     new_block_data_hash = chain.new_block(values['hash'], values['nonce'], values['date'], values['job_index'])
+    node.notify_peers_about_new_block()
 
     return jsonify(new_block_data_hash)
 
@@ -202,11 +218,17 @@ def connect_peer():
     values = request.json
     peer_url = values['peerUrl']
     # node.pc.p2p.create_connection(host=peer_url, port=5000)
-    node_info = requests.get("http://" + peer_url + ":5000/info").json()
-    node.sync_chain(node_info, peer_url)
+    node_info = requests.get("http://" + peer_url + "/info").json()
+    node.sync_chain(node_info)
+    node.peers.update({values['nodeId']: values['peerUrl']})
 
     return 'kurec', 200
 
+
+@app.route('/peers/notify-new-block', methods=['POST'])
+def sync_new_block():
+    node.sync_chain(request.json)
+    return "Thank you for the notification.", 200
 
 if __name__ == '__main__':
     app.run(host='192.168.214.192', port=5000)
