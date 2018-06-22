@@ -16,7 +16,7 @@ class Node(object):
 
     def notify_peers_about_new_block(self):
         notification = {
-            'blocksCount': self.chain.blocks.length,
+            'blocksCount': len(self.chain.blocks),
             'cumulativeDifficulty': self.chain.calc_cumulative_difficulty(),
             'nodeUrl': node.self_url
         }
