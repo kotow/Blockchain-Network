@@ -130,15 +130,15 @@ class Wallet(object):
         return sign_transaction(recipient_address, value, fee, private_key, data)
 
 #debug test output, must be removed once finalized
-wlt = Wallet("softuni")
-my_mnemonic_passphrase = wlt.get_passphrase()
-print(my_mnemonic_passphrase)
-loaded_json = json.loads(my_mnemonic_passphrase.decode())
-generated_passphrase = loaded_json["mnemonic_phrase"]
-act = wlt.create_new_account()
-print("Fresh first key:", act)
+#wlt = Wallet("softuni")
+#my_mnemonic_passphrase = wlt.get_passphrase()
+#print(my_mnemonic_passphrase)
+#loaded_json = json.loads(my_mnemonic_passphrase.decode())
+#generated_passphrase = loaded_json["mnemonic_phrase"]
+#act = wlt.create_new_account()
+#print("Fresh first key:", act)
 #tran = wlt.sign_tx("f893a004fe1b498b3b2970efbb4b0738baa28028", 1000000000, 5000, "2798dc0b52771b16a3ea76b12ea966590d2070106d1d8fda46a3d93bd7f7cfd5", "")
 #print(tran)
-print(wlt.restore_wallet(generated_passphrase, "softuni"))
-act = wlt.create_new_account()
-print("Restored first key:", act)
+#print(wlt.restore_wallet(generated_passphrase, "softuni"))
+#act = wlt.create_new_account()
+#print("Restored first key:", act)

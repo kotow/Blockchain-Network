@@ -79,5 +79,31 @@ def sign_transaction(recipient_address:str, value:int, fee:int, private_key:str,
         hashed_transaction_int
     )
     #print(transaction_signature)
-    transaction["senderSignature"] = transaction_signature
-    return json.dumps(transaction, sort_keys = True).encode()
+    transaction["senderSignature"] = ((hex(transaction_signature[0]))[2:], (hex(transaction_signature[1]))[2:])
+    return json.dumps(transaction, sort_keys = True).encode(enc)
+
+def verify_transaction(tx_json:object) -> bool:
+#    tx_json = json.loads(tx_json)
+#    transaction = {
+#        "from": tx_json["from"],
+#        "to": tx_json["to"],
+#        "value": tx_json["value"],
+#        "fee": tx_json["fee"],
+#        "dateCreated": tx_json["dateCreated"],
+#        "data": tx_json["data"],
+#        "senderPubKey": tx_json["senderPubKey"]
+#    }
+#    json_encoder = json.JSONEncoder(separators = (",", ":"))
+#    transaction_json = json_encoder.encode(transaction)
+#    transaction_json = transaction_json.encode(enc)
+#    hashed_transaction_json = hashlib.sha256(transaction_json).digest()
+#    print(hashed_transaction_json)
+#    print(hashlib.sha256(transaction_json).hexdigest())
+#    is_valid = verify(
+#        generator_secp256k1,
+#        tx_json["senderPubKey"],
+#        hashed_transaction_json,
+#        tx_json["senderSignature"]
+#    )
+#    print(is_valid)
+    return True
