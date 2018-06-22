@@ -60,11 +60,20 @@ class Wallet(object):
     
     # returns only confirmed balance
     def get_account_balance(self, address:str) -> object:
-        pass
-    
-    # returns detailed balance with confirmed and pending transactions
-    def get_detailed_account_balance(self, address:str) -> object:
-        pass
+        # has to be run with pickle and verified
+        blocks = self.__get_chain_from_node__()
+        balances = {}
+        for block in blocks:
+            for transaction in block.transactions:
+                if not transaction.sender in balances.keys():
+                    balances[transaction.sender] = 0
+                if not transaction.to in balances.keys():
+                    balances[transaction.to] = 0
+                balances[transaction.to] += transaction.value
+                balances[transaction.sender] -= transaction.value
+                balances[transaction.sender] -= transaction.fee
+
+        return json.dumps(accounts[balances], sort_keys = True).encode()
     
     def __attempt_wallet_recovery__(self, mnemonic_passphrase:str, pswd:str) -> bool:
         global seed, chain_number, enc, mnemonic_phrase, password, salt, accounts
@@ -124,7 +133,9 @@ class Wallet(object):
         return account_json
     
     def __get_chain_from_node__(self):
-        pass
+        response = requests.get("http://192.168.214.192/chain")
+        response_json = response.json()
+        return response_json
     
     def sign_tx(self, recipient_address:str, value:int, fee:int, private_key:str, data:str) -> object:
         return sign_transaction(recipient_address, value, fee, private_key, data)
