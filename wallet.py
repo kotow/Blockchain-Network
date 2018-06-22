@@ -61,17 +61,20 @@ class Wallet(object):
     # returns only confirmed balance
     def get_account_balance(self, address:str) -> object:
         # has to be run with pickle and verified
+        if self.__defined__(address) == False: return False
+        if isinstance(address, str) == False: return False
         blocks = self.__get_chain_from_node__()
         balances = {}
         for block in blocks:
             for transaction in block.transactions:
-                if not transaction.sender in balances.keys():
-                    balances[transaction.sender] = 0
-                if not transaction.to in balances.keys():
-                    balances[transaction.to] = 0
-                balances[transaction.to] += transaction.value
-                balances[transaction.sender] -= transaction.value
-                balances[transaction.sender] -= transaction.fee
+                if address == transaction.sender:
+                    if not transaction.sender in balances.keys():
+                        balances[transaction.sender] = 0
+                    if not transaction.to in balances.keys():
+                        balances[transaction.to] = 0
+                    balances[transaction.to] += transaction.value
+                    balances[transaction.sender] -= transaction.value
+                    balances[transaction.sender] -= transaction.fee
 
         return json.dumps(accounts[balances], sort_keys = True).encode()
     
