@@ -21,11 +21,13 @@ class Node(object):
             'nodeUrl': node.self_url
         }
         for node_url in self.peers.values():
-            requests.post(node_url + "/blocks", jsonify(notification))
+            requests.post(node_url + "/blocks", json=jsonify(notification),
+                                     headers={'content-type': 'application/json'})
 
     def notify_peers_about_new_transcation(self, transaction):
         for node_url in self.peers.values():
-            requests.post(node_url + "/transactions/send", json=transaction)
+            requests.post(node_url + "/transactions/send", json=transaction,
+                                     headers={'content-type': 'application/json'})
 
     def sync_chain(self, peer_chain):
         #  TODO:  validate all blocks and transactions
@@ -104,6 +106,13 @@ def get_chain():
 @app.route('/blocks', methods=['GET'])
 def get_transactions():
     return json.dumps(chain.get_blocks())
+
+
+@app.route('/blocks', methods=['POST'])
+def kurec():
+    values = json.loads(request.get_json(force=True))
+    node.sync_chain(values)
+    return '', 200
 
 
 @app.route('/blocks/<block_id>', methods=['GET'])
