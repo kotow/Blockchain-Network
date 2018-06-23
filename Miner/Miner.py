@@ -36,6 +36,6 @@ class Miner(object):
         requests.post(self.submit_mined_block_url, None, json.dumps(response))
 
 
-miner = Miner('0.0.0.0', '5000', "e2a52af7f5f41ace46d6c82e2247277509ae3beb")
+miner = Miner('0.0.0.0', '5001', "e2a52af7f5f41ace46d6c82e2247277509ae3beb")
 miner.get_mining_job()
 miner.mine()

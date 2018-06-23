@@ -24,8 +24,8 @@ class Node(object):
             requests.post(node_url + "/blocks", jsonify(notification))
 
     def notify_peers_about_new_transcation(self, transaction):
-        for node_id, node_url in self.peers:
-            requests.post(node_url + "/transactions/send", jsonify(transaction))
+        for node_url in self.peers.values():
+            requests.post(node_url + "/transactions/send", json=transaction)
 
     def sync_chain(self, peer_chain):
         #  TODO:  validate all blocks and transactions
@@ -68,10 +68,10 @@ class Node(object):
 
 
 app = Flask(__name__)
-# chain = Blockchain(genesis_block, 3)
+chain = Blockchain(genesis_block, 3)
 # if pickle.load( open( "save.p", "rb" ) ):
-chain = pickle.load(open("save.p", "rb"))
-node = Node('0.0.0.0', '5001', chain)
+# chain = pickle.load(open("save.p", "rb"))
+node = Node('127.0.0.1', '5001', chain)
 
 
 @app.route('/info', methods=['GET'])
@@ -137,15 +137,17 @@ def new_transaction():
     pickle.dump(chain, open("save.p", "wb"))
     # the correct way to get the json is get_json(force = True)
     # values = request.json
-    values = request.get_json(force = True)
+    values = json.loads(request.get_json(force = True))
     available_balance = chain.get_balance_for_address(values['from'])
     if int(available_balance['safeBalance']) < (int(values['value']) + int(values['fee'])):
+        print('balance')
         return 'kurec', 400
     tran = chain.add_new_transaction(values)
     if isinstance(tran, Transaction):
         node.notify_peers_about_new_transcation(values)
         return hex(tran.transaction_data_hash)[2:], 201
     else:
+        print('validation')
         return "kurec2", 400
 
 
@@ -207,16 +209,16 @@ def get_peers():
 @app.route('/peers/connect', methods=['POST'])
 def connect_peer():
     # the correct way is get_json(force = True)
-    # values = request.json
-    values = request.get_json(force = True)
+    values = request.json
+    # values = request.get_json(force = True)
     peer_url = values['peerUrl']
     # unsure about the one bellow, test locally to confirm if change is needed
     node_info = requests.get(peer_url + "/info").json()
     node.sync_chain(node_info)
-    if not node_info['nodeId'] in node.peers.keys():
-        requests.post(node_info['nodeUrl'] + '/peers/connect', json=json.dumps({'peerUrl': node.self_url}),
-                      headers={'content-type': 'application/json'})
-        node.peers.update({node_info['nodeId']: node_info['nodeUrl']})
+    # if not node_info['nodeId'] in node.peers.keys():
+    #     requests.post(node_info['nodeUrl'] + '/peers/connect', json=json.dumps({'peerUrl': node.self_url}),
+    #                   headers={'content-type': 'application/json'})
+    node.peers.update({node_info['nodeId']: node_info['nodeUrl']})
     pickle.dump(chain, open("save.p", "wb"))
     return 'kurec', 200
 
@@ -231,4 +233,4 @@ def sync_new_block():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='127.0.0.1', port=5001)

@@ -49,7 +49,8 @@ def sign_tx(address:str):
 def post_transaction(transaction:object) -> int:
 #    print(transaction)
 #    print(transaction.decode())
-    response = requests.post("http://0.0.0.0:5001/transactions/send", data = json.dumps(transaction.decode()))
+    response = requests.post("http://0.0.0.0:5001/transactions/send", json=transaction.decode(),
+                      headers={'content-type': 'application/json'})
     return response.status_code
     
 if __name__ == '__main__':

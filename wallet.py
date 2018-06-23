@@ -137,11 +137,16 @@ class Wallet(object):
     
     def __get_chain_from_node__(self):
         response = requests.get("http://0.0.0.0:5001/chain")
+        print(response)
         response_json = response.json()
+        print(response_json)
         return response_json
     
-    def sign_tx(self, recipient_address:str, value:int, fee:int, private_key:str, data:str) -> object:
-        return sign_transaction(recipient_address, value, fee, private_key, data)
+    def send_tx(self, recipient_address:str, value:int, fee:int, private_key:str, data:str) -> object:
+        transaction = sign_transaction(recipient_address, value, fee, private_key, data)
+        response = requests.post("http://0.0.0.0:5001/transactions/send", json=transaction.decode(),
+                                     headers={'content-type': 'application/json'})
+        return response.status_code
 
 #debug test output, must be removed once finalized
 #wlt = Wallet("softuni")
