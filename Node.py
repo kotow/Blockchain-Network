@@ -135,7 +135,9 @@ def get_confirmed_transaction_by_hash(transaction_hash):
 @app.route('/transactions/send', methods=['POST'])
 def new_transaction():
     pickle.dump(chain, open("save.p", "wb"))
-    values = request.json
+    # the correct way to get the json is get_json(force = True)
+    # values = request.json
+    values = request.get_json(force = True)
     available_balance = chain.get_balance_for_address(values['from'])
     if int(available_balance['safeBalance']) < (int(values['value']) + int(values['fee'])):
         return 'kurec', 400
@@ -166,7 +168,9 @@ def get_mining_job(address):
 
 @app.route('/mining/submit-mined-block', methods=['POST'])
 def mine():
-    values = json.loads(request.json)
+    # correct ways is get_json(force = True)
+    # values = json.loads(request.json)
+    values = json.loads(request.get_json(force = True))
     pickle.dump(chain, open("save.p", "wb"))
     new_block_data_hash = chain.new_block(values['hash'], values['nonce'], values['date'], values['job_index'])
     node.notify_peers_about_new_block()
@@ -202,8 +206,11 @@ def get_peers():
 
 @app.route('/peers/connect', methods=['POST'])
 def connect_peer():
-    values = request.json
+    # the correct way is get_json(force = True)
+    # values = request.json
+    values = request.get_json(force = True)
     peer_url = values['peerUrl']
+    # unsure about the one bellow, test locally to confirm if change is needed
     node_info = requests.get(peer_url + "/info").json()
     node.sync_chain(node_info)
     if not node_info['nodeId'] in node.peers.keys():
@@ -216,7 +223,9 @@ def connect_peer():
 
 @app.route('/peers/notify-new-block', methods=['POST'])
 def sync_new_block():
-    node.sync_chain(request.json)
+    # correct way is get_json(force = True)
+    # node.sync_chain(request.json)
+    node.sync_chain(request.get_json(force = True))
     pickle.dump(chain, open("save.p", "wb"))
     return "Thank you for the notification.", 200
 
