@@ -20,7 +20,7 @@ class Node(object):
             'cumulativeDifficulty': self.chain.calc_cumulative_difficulty(),
             'nodeUrl': node.self_url
         }
-        for node_id, node_url in self.peers:
+        for node_url in self.peers.values():
             requests.post(node_url + "/blocks", jsonify(notification))
 
     def notify_peers_about_new_transcation(self, transaction):
